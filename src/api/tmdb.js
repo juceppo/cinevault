@@ -25,6 +25,8 @@ export const discoverByGenre  = (genreId, page = 1) => get('/discover/movie',   
 export const getWatchProviders  = (id)                  => get(`/movie/${id}/watch/providers`);
 export const getMovieVideos     = (id)                  => get(`/movie/${id}/videos`);
 export const getRecommendations = (id)                  => get(`/movie/${id}/recommendations`);
+export const getUpcoming        = (page = 1)            => get('/movie/upcoming', { page });
+export const getTrending        = (period = 'week')     => get(`/trending/movie/${period}`);
 export const discoverByGenres   = (genreIds, page = 1)  => get('/discover/movie', {
   with_genres:       genreIds.join('|'),
   sort_by:           'popularity.desc',

@@ -5,7 +5,8 @@ import {
   getWatchProviders, getMovieVideos, getRecommendations,
   IMG, BACK, LOGO,
 } from '../api/tmdb';
-import { useFavorites } from '../context/FavoritesContext';
+import { useFavorites }   from '../context/FavoritesContext';
+import { useMovieStatus } from '../context/MovieStatusContext';
 import MovieRow from '../components/MovieRow';
 
 const PLACEHOLDER = 'https://via.placeholder.com/300x450/1c2333/f59e0b?text=Sin+imagen';
@@ -152,6 +153,74 @@ function SimilarMovies({ movieId, currentId }) {
   );
 }
 
+/* ── Status widget ──────────────────────────────── */
+const STATUS_OPTIONS = [
+  { key: 'want',     label: 'Quiero ver',  icon: '🔖', color: '#f59e0b' },
+  { key: 'watching', label: 'Viendo',      icon: '▶',  color: '#3b82f6' },
+  { key: 'watched',  label: 'Vista',       icon: '✓',  color: '#22c55e' },
+  { key: 'dropped',  label: 'Lo dejé',     icon: '✕',  color: '#6b7280' },
+];
+
+function StatusWidget({ movie }) {
+  const ms      = useMovieStatus();
+  const current = ms.getStatus(movie.id);
+  const rating  = ms.getRating(movie.id);
+  const note    = ms.getNote(movie.id);
+  const [editNote, setEditNote] = useState(false);
+  const [noteInput, setNoteInput] = useState('');
+
+  const handleStatus = (key) => {
+    if (current === key) ms.removeStatus(movie.id);
+    else ms.setStatus(movie, key);
+  };
+  const saveNote = () => { ms.setNote(movie.id, noteInput); setEditNote(false); };
+
+  return (
+    <div className="status-widget">
+      <p className="status-widget__label">Mi estado</p>
+      <div className="status-chips">
+        {STATUS_OPTIONS.map((opt) => (
+          <button key={opt.key}
+            className={`status-chip ${current === opt.key ? 'status-chip--active' : ''}`}
+            style={current === opt.key ? { borderColor: opt.color, color: opt.color, background: opt.color + '18' } : {}}
+            onClick={() => handleStatus(opt.key)}
+          >{opt.icon} {opt.label}</button>
+        ))}
+      </div>
+
+      {current && (
+        <>
+          <p className="status-widget__label" style={{ marginTop: 14 }}>Mi puntuación</p>
+          <div className="star-rating">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} className={`star-btn ${n <= rating ? 'star-btn--on' : ''}`}
+                onClick={() => ms.setRating(movie.id, n === rating ? 0 : n)}>★</button>
+            ))}
+            {rating > 0 && <span className="star-label">{rating}/5</span>}
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            {editNote ? (
+              <div className="note-edit">
+                <textarea className="note-input" rows={3} placeholder="Tu reseña personal…"
+                  value={noteInput} onChange={(e) => setNoteInput(e.target.value)} autoFocus />
+                <div className="note-actions">
+                  <button className="note-save" onClick={saveNote}>Guardar</button>
+                  <button className="note-cancel" onClick={() => setEditNote(false)}>Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <button className="note-trigger" onClick={() => { setNoteInput(note); setEditNote(true); }}>
+                {note ? `"${note}"` : '+ Añadir reseña personal'}
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 /* ── Main page ─────────────────────────────────── */
 export default function MovieDetail() {
   const { id } = useParams();
@@ -201,6 +270,7 @@ export default function MovieDetail() {
             <button className={`btn-fav ${fav ? 'btn-fav--active' : ''}`} onClick={() => toggle(movie)}>
               {fav ? '♥ Quitar de favoritos' : '♡ Añadir a favoritos'}
             </button>
+            <StatusWidget movie={movie} />
           </div>
 
           <div className="detail-info">
